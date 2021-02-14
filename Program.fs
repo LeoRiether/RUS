@@ -1,5 +1,7 @@
 open System
+open System.Linq
 open Parser
+open DataStructure
 
 let dataFolder = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData)
 let dataFile = dataFolder + "/rus.data"
@@ -22,14 +24,25 @@ Examples:
     rus pop http://codeforces.com/problemset/problem/4/A
 """
 
-let doPeek () =
-    ()
+let currentRus = lazy (RUS.readFromFile dataFile)
 
-let doPush data =
-    ()
+let doPeek () =
+    let rus = currentRus.Force().Data
+    let item = if rus.Count = 0
+               then "the stack is empty"
+               else rus.Last()
+    printfn "%s" item
+
+let doPush (Url url) =
+    let rus = currentRus.Force()
+    rus.Data.Add(url)
+    RUS.saveToFile dataFile rus
 
 let doPop data =
-    ()
+    let rus = currentRus.Force()
+    if rus.Data.Count > 0 then
+        rus.Data.RemoveAt(rus.Data.Count - 1)
+    RUS.saveToFile dataFile rus
 
 let execute = function
     | Help -> printfn "%s" HelpString
