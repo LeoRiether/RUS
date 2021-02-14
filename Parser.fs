@@ -6,6 +6,7 @@ type PopData = Url
 
 type Command =
     | Help
+    | DataFile
     | Peek
     | Push of PushData
     | Pop of PopData
@@ -20,5 +21,7 @@ let parseArgs = function
 
     | ["pop"] -> Error "pop needs at least one argument"
     | "pop"::url::_ -> Ok (Pop (Url url))
+
+    | "data-file"::_ -> Ok DataFile
 
     | unknown::_ -> Error (sprintf "Unknown command \"%s\"" unknown)

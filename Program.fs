@@ -7,7 +7,7 @@ let dataFolder = Environment.GetFolderPath(Environment.SpecialFolder.Application
 let dataFile = dataFolder + "/rus.data"
 
 [<Literal>]
-let HelpString = """R.U.S. – Randomized Unsolved Stack
+let HelpString = """R.U.S. -- Randomized Unsolved Stack
 
 Usage:
     rus [command] [options]
@@ -17,6 +17,7 @@ Commands:
     push <url>       Pushes an URL onto the stack
     pop <url>        Pops an URL from the stack
     peek             Peeks a random item from near the top of the stack
+    data-file        Prints the location of the RUS file
 
 Examples:
     rus push https://codeforces.com/problemset/problem/4/A
@@ -27,28 +28,42 @@ Examples:
 let currentRus = lazy (RUS.readFromFile dataFile)
 
 let doPeek () =
-    let rus = currentRus.Force().Data
-    let item = if rus.Count = 0
-               then "the stack is empty"
-               else rus.Last()
-    printfn "%s" item
+    let rus = currentRus.Force()
+    let result =
+        RUS.peek rus
+        |> Option.defaultValue "The stack is empty"
+
+    RUS.saveToFile dataFile rus
+    result
 
 let doPush (Url url) =
     let rus = currentRus.Force()
-    rus.Data.Add(url)
+    RUS.push url rus
     RUS.saveToFile dataFile rus
 
-let doPop data =
+let doPop (Url url) =
     let rus = currentRus.Force()
-    if rus.Data.Count > 0 then
-        rus.Data.RemoveAt(rus.Data.Count - 1)
+    let result = RUS.pop url rus
     RUS.saveToFile dataFile rus
+    result
 
 let execute = function
     | Help -> printfn "%s" HelpString
-    | Peek -> doPeek ()
-    | Push x -> doPush x
-    | Pop x  -> doPop x
+    | DataFile -> printfn "%s" dataFile
+
+    | Peek ->
+        let item = doPeek ()
+        printfn "%s" item
+
+    | Push (Url x) ->
+        doPush (Url x)
+        printfn "Pushed <%s> onto the stack!" x
+
+    | Pop (Url x) ->
+        let result = doPop (Url x)
+        match result with
+        | RUS.Popped -> printfn "Popped <%s> from the stack!" x
+        | RUS.ItemNotFound -> printfn "Item <%s> wasn't on the stack! No changes made" x
 
 [<EntryPoint>]
 let main argv =
@@ -56,6 +71,6 @@ let main argv =
 
     match command with
     | Ok cmd -> execute cmd
-    | Error e -> failwith e
+    | Error e -> eprintfn "%s" e
 
     0
